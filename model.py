@@ -2,23 +2,20 @@ import pandas as pd
 import pickle
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
 
 # ---------------- LOAD DATASET ----------------
-df = pd.read_csv("kaggle_student_dataset.csv")
+df = pd.read_csv("student_dataset.csv")
 
-# ---------------- SELECT REQUIRED COLUMNS ----------------
-# IMPORTANT:
-# mid1, mid2, assignment, external must be NUMERIC (obtained marks)
-df = df[[
-    "mid1",          # obtained marks (e.g., 23)
-    "mid2",          # obtained marks (e.g., 15)
-    "assignment",    # obtained marks (e.g., 6)
-    "external",      # obtained external marks (e.g., 40)
-    "final_score"    # total score
+# ---------------- FEATURE & TARGET SELECTION ----------------
+X = df[[
+    "mid1",
+    "mid2",
+    "assignment1",
+    "assignment2",
+    "external"
 ]]
 
-# ---------------- FEATURES & TARGET ----------------
-X = df.drop("final_score", axis=1)
 y = df["final_score"]
 
 # ---------------- TRAIN-TEST SPLIT ----------------
@@ -33,8 +30,15 @@ X_train, X_test, y_train, y_test = train_test_split(
 model = LinearRegression()
 model.fit(X_train, y_train)
 
+# ---------------- EVALUATE MODEL ----------------
+y_pred = model.predict(X_test)
+accuracy = r2_score(y_test, y_pred)
+
+print(f"✅ Model trained successfully")
+print(f"📊 R² Score (Accuracy): {accuracy:.2f}")
+
 # ---------------- SAVE MODEL ----------------
 with open("student_model.pkl", "wb") as f:
     pickle.dump(model, f)
 
-print("✅ Model trained successfully with marks-based features only")
+print("💾 Model saved as student_model.pkl")
