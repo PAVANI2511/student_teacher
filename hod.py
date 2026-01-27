@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 
 # -------------------------------------------------
 # 🔐 HOD LOGIN
@@ -31,7 +30,7 @@ def hod_login():
 # -------------------------------------------------
 def hod_dashboard():
     st.subheader("🏢 HOD Dashboard – Academic Monitoring System")
-    st.caption("Department • Year • Section • Student • ML Risk")
+    st.caption("Department • Year • Section • Student • Assignment Risk")
 
     # -------------------------------------------------
     # 📂 FILE UPLOAD (CSV + EXCEL)
@@ -55,15 +54,9 @@ def hod_dashboard():
     for f in files:
         try:
             if f.name.endswith(".csv"):
-                df_temp = pd.read_csv(
-                    f,
-                    engine="python",
-                    on_bad_lines="skip"
-                )
-
+                df_temp = pd.read_csv(f, engine="python", on_bad_lines="skip")
             elif f.name.endswith(".xlsx"):
                 df_temp = pd.read_excel(f)
-
             else:
                 st.warning(f"Unsupported file skipped: {f.name}")
                 continue
@@ -104,34 +97,19 @@ def hod_dashboard():
 
     section = st.sidebar.selectbox(
         "Section",
-        sorted(
-            df[
-                (df["department"] == department) &
-                (df["year"] == year)
-            ]["section"].dropna().unique()
-        )
+        sorted(df[(df["department"] == department) & (df["year"] == year)]["section"].dropna().unique())
     )
 
-    filtered_df = df[
-        (df["department"] == department) &
-        (df["year"] == year) &
-        (df["section"] == section)
-    ]
+    filtered_df = df[(df["department"] == department) & (df["year"] == year) & (df["section"] == section)]
 
     student_option = st.sidebar.selectbox(
         "Student",
-        ["All Students"] +
-        sorted(
-            filtered_df["roll_no"].astype(str) + " - " +
-            filtered_df["name"]
-        )
+        ["All Students"] + sorted(filtered_df["roll_no"].astype(str) + " - " + filtered_df["name"])
     )
 
     if student_option != "All Students":
         roll = student_option.split(" - ")[0]
-        filtered_df = filtered_df[
-            filtered_df["roll_no"].astype(str) == roll
-        ]
+        filtered_df = filtered_df[filtered_df["roll_no"].astype(str) == roll]
 
     st.success(
         f"Department: {department} | Year: {year} | "
@@ -141,15 +119,9 @@ def hod_dashboard():
     # -------------------------------------------------
     # 📘 SUBJECT IDENTIFICATION
     # -------------------------------------------------
-    assign_cols = [
-        c for c in filtered_df.columns
-        if c.endswith("_assign1") or c.endswith("_assign2")
-    ]
+    assign_cols = [c for c in filtered_df.columns if c.endswith("_assign1") or c.endswith("_assign2")]
 
-    subjects = sorted({
-        c.replace("_assign1", "").replace("_assign2", "")
-        for c in assign_cols
-    })
+    subjects = sorted({c.replace("_assign1", "").replace("_assign2", "") for c in assign_cols})
 
     # -------------------------------------------------
     # 📊 DEPARTMENT OVERVIEW
@@ -208,20 +180,13 @@ def hod_dashboard():
     st.subheader("📉 Subject-wise Failure %")
 
     fail_data = {}
-
     for s in subjects:
         ext_col = f"{s}_external"
         if ext_col in filtered_df.columns:
             fail_data[s] = (filtered_df[ext_col] < 40).mean() * 100
 
     if fail_data:
-        st.bar_chart(
-            pd.DataFrame.from_dict(
-                fail_data,
-                orient="index",
-                columns=["Fail %"]
-            )
-        )
+        st.bar_chart(pd.DataFrame.from_dict(fail_data, orient="index", columns=["Fail %"]))
     else:
         st.info("No external marks data")
 
@@ -230,11 +195,7 @@ def hod_dashboard():
     # -------------------------------------------------
     st.subheader("🏆 Top & Bottom Performers")
 
-    score_cols = [
-        c for c in filtered_df.columns
-        if "_mid" in c or "_assign" in c or "_external" in c
-    ]
-
+    score_cols = [c for c in filtered_df.columns if "_mid" in c or "_assign" in c or "_external" in c]
     filtered_df["Total_Score"] = filtered_df[score_cols].sum(axis=1)
 
     col1, col2 = st.columns(2)
@@ -256,49 +217,6 @@ def hod_dashboard():
         )
 
     # -------------------------------------------------
-    # 🤖 ML FUTURE RISK
-    # -------------------------------------------------
-    st.subheader("🤖 ML-Based Future Academic Risk")
-
-    if "result" in filtered_df.columns:
-        feature_cols = [
-            c for c in filtered_df.columns
-            if "_mid" in c or "_assign" in c or "_external" in c
-        ]
-
-        ml_df = filtered_df.dropna(subset=feature_cols + ["result"])
-
-        if not ml_df.empty:
-            X = ml_df[feature_cols]
-            y = ml_df["result"].map({"PASS": 1, "FAIL": 0})
-
-            model = RandomForestClassifier(
-                n_estimators=200,
-                random_state=42
-            )
-            model.fit(X, y)
-
-            ml_df["PASS_Probability"] = (
-                model.predict_proba(X)[:, 1] * 100
-            ).round(2)
-
-            threshold = st.slider("Risk Threshold (%)", 40, 80, 60)
-
-            risk_ml = ml_df[
-                ml_df["PASS_Probability"] < threshold
-            ][["roll_no", "name", "PASS_Probability"]]
-
-            if not risk_ml.empty:
-                st.error(f"{len(risk_ml)} students predicted at risk")
-                st.dataframe(risk_ml, use_container_width=True)
-            else:
-                st.success("No ML risk students 🎉")
-        else:
-            st.info("Not enough data for ML")
-    else:
-        st.info("ML requires 'result' column")
-
-    # -------------------------------------------------
     # 📋 FINAL TABLE
     # -------------------------------------------------
     st.subheader("📋 Student Records")
@@ -308,4 +226,3 @@ def hod_dashboard():
         filtered_df.to_csv(index=False).encode("utf-8"),
         "filtered_student_records.csv"
     )
-    
