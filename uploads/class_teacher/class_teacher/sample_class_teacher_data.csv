@@ -1,0 +1,6 @@
+class,roll_no,name,result,python_assign1,python_assign2,python_mid,python_external,dbms_assign1,dbms_assign2,dbms_mid,dbms_external
+CSE-A,101,Ravi,PASS,10,9,22,65,8,7,20,60
+CSE-A,102,Priya,FAIL,0,0,10,32,7,6,15,38
+CSE-A,103,Kiran,PASS,8,7,18,58,0,0,12,35
+CSE-B,201,Anu,PASS,9,8,20,71,10,9,24,74
+CSE-B,202,Rahul,FAIL,0,0,11,29,0,0,10,25
